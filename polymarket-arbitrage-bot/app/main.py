@@ -47,29 +47,55 @@ def check_dependencies():
 
 def main():
     """Main entry point"""
-    # Check dependencies first
-    check_dependencies()
-    
-    # Import after checking dependencies
-    from src.gui.main_window import run_gui
-    from src.utils.logger import setup_logger
-    
-    logger = setup_logger("arbitrage")
-    
-    logger.info("=" * 60)
-    logger.info("⚡ POLYMARKET ARBITRAGE BOT")
-    logger.info("=" * 60)
-    logger.info("Mode: DEMO (real prices, fake money)")
-    logger.info("Fetching real-time data from Polymarket...")
-    logger.info("=" * 60)
-    
     try:
-        run_gui()
-    except KeyboardInterrupt:
-        logger.info("\n\nShutdown requested by user")
-        sys.exit(0)
+        # Check dependencies first
+        check_dependencies()
+        
+        # Import after checking dependencies
+        from src.gui.main_window import run_gui
+        from src.utils.logger import setup_logger
+        
+        logger = setup_logger("arbitrage")
+        
+        logger.info("=" * 60)
+        logger.info("⚡ POLYMARKET ARBITRAGE BOT")
+        logger.info("=" * 60)
+        logger.info("Mode: DEMO (real prices, fake money)")
+        logger.info("Fetching real-time data from Polymarket...")
+        logger.info("=" * 60)
+        
+        # Verify config file exists
+        from pathlib import Path
+        config_path = Path("config.yaml")
+        if not config_path.exists():
+            logger.error("Configuration file 'config.yaml' not found!")
+            print("\n❌ ERROR: Configuration file missing!")
+            print("Please ensure 'config.yaml' exists in the application directory.")
+            input("Press Enter to exit...")
+            sys.exit(1)
+        
+        try:
+            run_gui()
+        except ImportError as e:
+            logger.error(f"Import error: {e}")
+            print(f"\n❌ ERROR: Missing dependency - {e}")
+            print("Please run the installer to install all required packages.")
+            input("Press Enter to exit...")
+            sys.exit(1)
+        except KeyboardInterrupt:
+            logger.info("\n\nShutdown requested by user")
+            sys.exit(0)
+        except Exception as e:
+            logger.error(f"Application error: {e}", exc_info=True)
+            print(f"\n❌ ERROR: {e}")
+            print("Check the log files for more details.")
+            input("Press Enter to exit...")
+            sys.exit(1)
+            
     except Exception as e:
-        logger.error(f"Application error: {e}", exc_info=True)
+        print(f"\n❌ CRITICAL ERROR: {e}")
+        print("The application failed to start.")
+        input("Press Enter to exit...")
         sys.exit(1)
 
 

@@ -1,5 +1,5 @@
 """Demo mode - simulated trading with fake money"""
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from ..utils.logger import setup_logger
@@ -40,7 +40,7 @@ class DemoMode:
         no_price: float,
         trading_fee: float = 0.02,
         gas_cost: float = 0.01
-    ) -> DemoTrade:
+    ) -> Optional[DemoTrade]:
         """
         Execute a simulated arbitrage trade
         
@@ -52,16 +52,39 @@ class DemoMode:
             gas_cost: Estimated gas cost
             
         Returns:
-            DemoTrade object with results
+            DemoTrade object with results, or None if trade fails
         """
+        # Validate inputs
+        if not market_name:
+            logger.error("[DEMO] Invalid market name")
+            return None
+        
+        if not isinstance(yes_price, (int, float)) or not isinstance(no_price, (int, float)):
+            logger.error("[DEMO] Invalid price types")
+            return None
+        
+        if yes_price < 0 or yes_price > 1 or no_price < 0 or no_price > 1:
+            logger.error(f"[DEMO] Invalid price ranges: YES={yes_price}, NO={no_price}")
+            return None
+        
+        if trading_fee < 0 or trading_fee > 1 or gas_cost < 0:
+            logger.error(f"[DEMO] Invalid fee parameters: fee={trading_fee}, gas={gas_cost}")
+            return None
+        
         # Calculate costs
         share_cost = yes_price + no_price
         fee_amount = share_cost * trading_fee
         total_cost = share_cost + fee_amount + gas_cost
         
+        # Check if we have enough balance
+        if total_cost > self.balance:
+            logger.error(f"[DEMO] Insufficient balance: need ${total_cost:.2f}, have ${self.balance:.2f}")
+            return None
+        
         # Simulate buying
-        logger.info(f"[DEMO] Buying YES share @ ${yes_price:.2f}")
-        logger.info(f"[DEMO] Buying NO share @ ${no_price:.2f}")
+        logger.info(f"[DEMO] Buying YES share @ ${yes_price:.4f}")
+        logger.info(f"[DEMO] Buying NO share @ ${no_price:.4f}")
+        logger.info(f"[DEMO] Total cost: ${total_cost:.4f} (including fees)")
         
         # Update balance
         self.balance -= total_cost
@@ -79,7 +102,7 @@ class DemoMode:
         # Create trade record
         trade = DemoTrade(
             timestamp=datetime.now(),
-            market_name=market_name,
+            market_name=market_name[:100],  # Truncate long names
             yes_price=yes_price,
             no_price=no_price,
             total_cost=total_cost,

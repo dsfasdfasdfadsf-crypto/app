@@ -48,8 +48,25 @@ class ArbitrageDetector:
         Returns:
             ArbitrageOpportunity if profitable, None otherwise
         """
+        # Validate inputs
+        if not market_id or not market_name:
+            return None
+        
+        if not isinstance(yes_price, (int, float)) or not isinstance(no_price, (int, float)):
+            return None
+        
+        if yes_price < 0 or yes_price > 1 or no_price < 0 or no_price > 1:
+            return None
+        
+        if yes_price == 0 and no_price == 0:
+            return None
+        
         # Calculate total cost
         total_share_cost = yes_price + no_price
+        
+        # Sanity check - if total cost is too high, no arbitrage possible
+        if total_share_cost >= 1.0:
+            return None
         
         # Calculate fees
         fee_amount = total_share_cost * self.trading_fee
@@ -64,12 +81,16 @@ class ArbitrageDetector:
         profit = revenue - total_cost
         
         # Check if profitable
-        if profit > self.min_profit:
+        if profit > self.min_profit and total_cost > 0:
             profit_percentage = (profit / total_cost) * 100
+            
+            # Additional validation - profit percentage should be reasonable
+            if profit_percentage > 50:  # More than 50% profit seems unrealistic
+                return None
             
             return ArbitrageOpportunity(
                 market_id=market_id,
-                market_name=market_name,
+                market_name=market_name[:100],  # Truncate long names
                 yes_price=yes_price,
                 no_price=no_price,
                 total_cost=total_cost,

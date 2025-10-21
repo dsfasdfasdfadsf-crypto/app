@@ -379,40 +379,84 @@ class MainWindow(QMainWindow):
         if not self.monitoring:
             return
         
-        # Update display
-        self.yes_price_label.setText(f"YES: ${yes_price:.4f}")
-        self.no_price_label.setText(f"NO: ${no_price:.4f}")
-        
-        total = yes_price + no_price
-        self.total_label.setText(f"Total: ${total:.4f}")
-        
-        # Check for arbitrage
-        if self.selected_market:
-            opp = self.detector.check_arbitrage(
-                self.selected_market.id,
-                self.selected_market.question,
-                yes_price,
-                no_price
-            )
+        try:
+            # Validate price inputs
+            if not isinstance(yes_price, (int, float)) or not isinstance(no_price, (int, float)):
+                logger.warning(f"Invalid price types: YES={type(yes_price)}, NO={type(no_price)}")
+                return
             
-            if opp:
-                # Show arbitrage alert
-                alert_text = (
-                    f"🚨 ARBITRAGE OPPORTUNITY!\n"
-                    f"💰 Profit: ${opp.estimated_profit:.4f} ({opp.profit_percentage:.2f}%)"
+            if yes_price < 0 or yes_price > 1 or no_price < 0 or no_price > 1:
+                logger.warning(f"Invalid price ranges: YES={yes_price}, NO={no_price}")
+                return
+            
+            # Update display
+            self.yes_price_label.setText(f"YES: ${yes_price:.4f}")
+            self.no_price_label.setText(f"NO: ${no_price:.4f}")
+            
+            total = yes_price + no_price
+            self.total_label.setText(f"Total: ${total:.4f}")
+            
+            # Color-code total based on arbitrage potential
+            if total < 0.98:
+                # Potential arbitrage - green
+                self.total_label.setStyleSheet(
+                    "font-size: 16pt; font-weight: bold; color: #2e7d32; "
+                    "background-color: #e8f5e9; padding: 15px; border-radius: 8px;"
                 )
-                self.arb_alert.setText(alert_text)
-                self.arb_alert.setStyleSheet(
-                    "font-size: 13pt; font-weight: bold; color: #1b5e20; "
-                    "background-color: #c8e6c9; padding: 15px; border-radius: 8px; "
-                    "border: 2px solid #4caf50;"
+            elif total > 1.02:
+                # Expensive - red
+                self.total_label.setStyleSheet(
+                    "font-size: 16pt; font-weight: bold; color: #c62828; "
+                    "background-color: #ffebee; padding: 15px; border-radius: 8px;"
                 )
-                
-                # Auto-execute if enabled
-                if config.auto_execute:
-                    self.execute_arbitrage(opp)
             else:
-                self.arb_alert.setText("")
+                # Normal - gray
+                self.total_label.setStyleSheet(
+                    "font-size: 16pt; font-weight: bold; "
+                    "background-color: #f5f5f5; padding: 15px; border-radius: 8px;"
+                )
+            
+            # Check for arbitrage
+            if self.selected_market:
+                try:
+                    opp = self.detector.check_arbitrage(
+                        self.selected_market.id,
+                        self.selected_market.question,
+                        yes_price,
+                        no_price
+                    )
+                    
+                    if opp:
+                        # Show arbitrage alert
+                        alert_text = (
+                            f"🚨 ARBITRAGE OPPORTUNITY!\n"
+                            f"💰 Profit: ${opp.estimated_profit:.4f} ({opp.profit_percentage:.2f}%)\n"
+                            f"📊 Total Cost: ${total:.4f}"
+                        )
+                        self.arb_alert.setText(alert_text)
+                        self.arb_alert.setStyleSheet(
+                            "font-size: 13pt; font-weight: bold; color: #1b5e20; "
+                            "background-color: #c8e6c9; padding: 15px; border-radius: 8px; "
+                            "border: 2px solid #4caf50;"
+                        )
+                        
+                        # Auto-execute if enabled
+                        if config.auto_execute and opp.estimated_profit > 0.005:  # Only auto-execute if profit > $0.005
+                            self.execute_arbitrage(opp)
+                    else:
+                        self.arb_alert.setText("")
+                        
+                except Exception as e:
+                    logger.error(f"Error checking arbitrage: {e}")
+                    self.arb_alert.setText("⚠️ Error checking arbitrage")
+                    self.arb_alert.setStyleSheet(
+                        "font-size: 12pt; color: #d32f2f; background-color: #ffebee; "
+                        "padding: 10px; border-radius: 5px;"
+                    )
+                    
+        except Exception as e:
+            logger.error(f"Error updating prices: {e}")
+            self.log(f"❌ Price update error: {e}")
     
     def on_price_error(self, error: str):
         """Handle price fetch error"""
@@ -453,29 +497,43 @@ class MainWindow(QMainWindow):
     
     def execute_arbitrage(self, opp: ArbitrageOpportunity):
         """Execute arbitrage trade in demo mode"""
-        # Execute demo trade
-        trade = self.demo_mode.execute_arbitrage(
-            market_name=opp.market_name,
-            yes_price=opp.yes_price,
-            no_price=opp.no_price,
-            trading_fee=self.detector.trading_fee,
-            gas_cost=self.detector.gas_cost
-        )
-        
-        # Log trade details
-        self.log("=" * 50)
-        self.log(f"⚡ ARBITRAGE EXECUTED")
-        self.log(f"   Market: {opp.market_name[:50]}...")
-        self.log(f"   YES: ${opp.yes_price:.4f} | NO: ${opp.no_price:.4f}")
-        self.log(f"   💰 Profit: ${trade.profit:.4f}")
-        self.log(f"   📊 Balance: ${self.demo_mode.balance:.2f}")
-        self.log("=" * 50)
-        
-        # Update status
-        self.update_status()
-        
-        # Clear alert
-        self.arb_alert.setText("")
+        try:
+            # Execute demo trade
+            trade = self.demo_mode.execute_arbitrage(
+                market_name=opp.market_name,
+                yes_price=opp.yes_price,
+                no_price=opp.no_price,
+                trading_fee=self.detector.trading_fee,
+                gas_cost=self.detector.gas_cost
+            )
+            
+            if trade is None:
+                self.log("❌ Trade execution failed!")
+                return
+            
+            # Log trade details
+            self.log("=" * 50)
+            self.log(f"⚡ ARBITRAGE EXECUTED")
+            self.log(f"   Market: {opp.market_name[:50]}...")
+            self.log(f"   YES: ${opp.yes_price:.4f} | NO: ${opp.no_price:.4f}")
+            self.log(f"   💰 Profit: ${trade.profit:.4f}")
+            self.log(f"   📊 Balance: ${self.demo_mode.balance:.2f}")
+            self.log("=" * 50)
+            
+            # Update status
+            self.update_status()
+            
+            # Clear alert
+            self.arb_alert.setText("")
+            
+        except Exception as e:
+            logger.error(f"Error executing arbitrage: {e}")
+            self.log(f"❌ Execution error: {e}")
+            self.arb_alert.setText("❌ Execution failed")
+            self.arb_alert.setStyleSheet(
+                "font-size: 12pt; color: #d32f2f; background-color: #ffebee; "
+                "padding: 10px; border-radius: 5px;"
+            )
     
     def update_status(self):
         """Update status bar"""

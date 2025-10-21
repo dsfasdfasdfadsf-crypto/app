@@ -16,26 +16,34 @@ title Polymarket Arbitrage Bot
 REM Change to the directory where this script is located
 cd /d "%~dp0"
 
-REM Check dependencies
-python -c "import PyQt6" 2>nul
-if errorlevel 1 (
-    echo.
-    echo ========================================
-    echo   MISSING DEPENDENCIES
-    echo ========================================
-    echo.
-    echo Please run the installer:
-    echo INSTALL_AND_SETUP.bat
-    echo.
-    pause
-    exit /b 1
+REM Find Python command
+set PYTHON_CMD=
+python3 -c "import PyQt6" 2>nul
+if not errorlevel 1 (
+    set PYTHON_CMD=python3
+) else (
+    python -c "import PyQt6" 2>nul
+    if not errorlevel 1 (
+        set PYTHON_CMD=python
+    ) else (
+        echo.
+        echo ========================================
+        echo   MISSING DEPENDENCIES
+        echo ========================================
+        echo.
+        echo Please run the installer:
+        echo INSTALL_AND_SETUP.bat
+        echo.
+        pause
+        exit /b 1
+    )
 )
 
 REM Launch app
 echo.
 echo Starting Polymarket Arbitrage Bot...
 echo.
-python main.py
+%PYTHON_CMD% main.py
 
 REM Keep window open on error
 if errorlevel 1 (

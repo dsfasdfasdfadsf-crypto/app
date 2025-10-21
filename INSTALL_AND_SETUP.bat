@@ -29,32 +29,42 @@ REM ============================================
 echo [1/4] Checking Python...
 echo.
 
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo [X] Python NOT installed!
-    echo.
-    echo Opening download page...
-    echo.
-    echo Please:
-    echo  1. Download Python 3.11+
-    echo  2. CHECK "Add Python to PATH"
-    echo  3. Install Python
-    echo  4. Run this installer again
-    echo.
-    start https://www.python.org/downloads/
-    pause
-    exit /b 1
+REM Try python3 first, then python
+set PYTHON_CMD=
+python3 --version >nul 2>&1
+if not errorlevel 1 (
+    set PYTHON_CMD=python3
+    echo [OK] Python3 found!
+    python3 --version
+) else (
+    python --version >nul 2>&1
+    if not errorlevel 1 (
+        set PYTHON_CMD=python
+        echo [OK] Python found!
+        python --version
+    ) else (
+        echo [X] Python NOT installed!
+        echo.
+        echo Opening download page...
+        echo.
+        echo Please:
+        echo  1. Download Python 3.8+
+        echo  2. CHECK "Add Python to PATH"
+        echo  3. Install Python
+        echo  4. Run this installer again
+        echo.
+        start https://www.python.org/downloads/
+        pause
+        exit /b 1
+    )
 )
-
-echo [OK] Python found!
-python --version
 echo.
 
 REM ============================================
 REM Upgrade pip
 REM ============================================
 echo [2/4] Upgrading pip...
-python -m pip install --upgrade pip --quiet
+%PYTHON_CMD% -m pip install --upgrade pip --quiet
 echo [OK] Ready!
 echo.
 
@@ -67,14 +77,14 @@ echo Installing core dependencies (demo mode)...
 echo.
 
 cd polymarket-arbitrage-bot\app
-python -m pip install -r requirements.txt --quiet
+%PYTHON_CMD% -m pip install -r requirements.txt --quiet
 
 if errorlevel 1 (
     echo [!] Trying individual install...
-    python -m pip install PyQt6
-    python -m pip install aiohttp
-    python -m pip install pyyaml
-    python -m pip install python-dotenv
+    %PYTHON_CMD% -m pip install PyQt6
+    %PYTHON_CMD% -m pip install aiohttp
+    %PYTHON_CMD% -m pip install pyyaml
+    %PYTHON_CMD% -m pip install python-dotenv
 )
 
 cd ..\..

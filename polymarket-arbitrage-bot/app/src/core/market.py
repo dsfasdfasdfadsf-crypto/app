@@ -164,6 +164,110 @@ class PolymarketAPI:
             logger.error(f"Unexpected error fetching markets: {e}", exc_info=True)
             return []
     
+    async def search_markets(self, query: str, limit: int = 20) -> List[Market]:
+        """Search for markets by query string"""
+        await self._ensure_session()
+        
+        try:
+            url = f"{self.gamma_api}/markets"
+            params = {
+                "limit": limit,
+                "active": "true",
+                "closed": "false",
+                "archived": "false",
+                "query": query.strip()
+            }
+            
+            logger.info(f"Searching markets for: '{query}'")
+            
+            async with self.session.get(url, params=params) as response:
+                if response.status == 429:
+                    logger.warning("Rate limited by Polymarket API, retrying in 2 seconds...")
+                    await asyncio.sleep(2)
+                    return await self.search_markets(query, limit)
+                
+                if response.status != 200:
+                    logger.error(f"Failed to search markets: HTTP {response.status}")
+                    return []
+                
+                try:
+                    data = await response.json()
+                except Exception as e:
+                    logger.error(f"Failed to parse search JSON response: {e}")
+                    return []
+                
+                if not isinstance(data, list):
+                    logger.error(f"Unexpected search response format: {type(data)}")
+                    return []
+                
+                markets = []
+                
+                for item in data[:limit]:
+                    try:
+                        # Validate required fields
+                        if not isinstance(item, dict):
+                            continue
+                        
+                        market_id = item.get('id', '')
+                        if not market_id:
+                            continue
+                        
+                        condition_id = item.get('condition_id', item.get('conditionId', ''))
+                        question = item.get('question', 'Unknown Market')
+                        
+                        # Validate question length
+                        if len(question) > 200:
+                            question = question[:197] + "..."
+                        
+                        # Get token IDs
+                        clob_token_ids = item.get('clobTokenIds', [])
+                        
+                        if isinstance(clob_token_ids, str):
+                            try:
+                                import json
+                                clob_token_ids = json.loads(clob_token_ids)
+                            except (json.JSONDecodeError, ValueError):
+                                clob_token_ids = []
+                        
+                        if isinstance(clob_token_ids, list) and len(clob_token_ids) >= 2:
+                            yes_token = clob_token_ids[0] if len(clob_token_ids) > 0 else ''
+                            no_token = clob_token_ids[1] if len(clob_token_ids) > 1 else ''
+                        else:
+                            # Fallback to old format
+                            tokens = item.get('tokens', [])
+                            if isinstance(tokens, list) and len(tokens) >= 2:
+                                yes_token = tokens[0].get('token_id', '') if len(tokens) > 0 else ''
+                                no_token = tokens[1].get('token_id', '') if len(tokens) > 1 else ''
+                            else:
+                                continue
+                        
+                        if not yes_token or not no_token:
+                            continue
+                        
+                        market = Market(
+                            id=market_id,
+                            question=question,
+                            condition_id=condition_id,
+                            yes_token_id=yes_token,
+                            no_token_id=no_token,
+                            active=item.get('active', True)
+                        )
+                        markets.append(market)
+                        
+                    except Exception as e:
+                        logger.warning(f"Error parsing search result {item.get('id', 'unknown')}: {e}")
+                        continue
+                
+                logger.info(f"✓ Found {len(markets)} markets matching '{query}'")
+                return markets
+                
+        except asyncio.TimeoutError:
+            logger.error("Timeout searching markets from Polymarket")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error searching markets: {e}", exc_info=True)
+            return []
+    
     async def get_live_prices(self, token_id: str) -> Optional[Dict[str, float]]:
         """Get real-time price for a specific token"""
         if not token_id:

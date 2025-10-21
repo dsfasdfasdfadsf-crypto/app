@@ -39,6 +39,27 @@ class MarketFetchThread(QThread):
             self.error_occurred.emit(str(e))
 
 
+class MarketSearchThread(QThread):
+    """Background thread for searching markets"""
+    search_completed = pyqtSignal(list)
+    error_occurred = pyqtSignal(str)
+    
+    def __init__(self, api: PolymarketAPI, query: str):
+        super().__init__()
+        self.api = api
+        self.query = query
+    
+    def run(self):
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            markets = loop.run_until_complete(self.api.search_markets(self.query, limit=30))
+            loop.close()
+            self.search_completed.emit(markets)
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+
 class PriceUpdateThread(QThread):
     """Background thread for updating prices"""
     prices_updated = pyqtSignal(float, float)
@@ -97,6 +118,13 @@ class MainWindow(QMainWindow):
         # Monitoring state
         self.monitoring = False
         self.price_thread: Optional[PriceUpdateThread] = None
+        self.search_thread: Optional[MarketSearchThread] = None
+        
+        # Search debouncing
+        self.search_timer = QTimer()
+        self.search_timer.setSingleShot(True)
+        self.search_timer.timeout.connect(self.perform_search)
+        self.last_search_query = ""
         
         # Setup UI
         self.init_ui()
@@ -293,6 +321,7 @@ class MainWindow(QMainWindow):
         """Fetch markets from Polymarket"""
         self.log("🔄 Fetching markets from Polymarket...")
         self.refresh_btn.setEnabled(False)
+        self.refresh_btn.setText("🔄 Loading...")
         
         self.fetch_thread = MarketFetchThread(self.api)
         self.fetch_thread.markets_fetched.connect(self.on_markets_fetched)
@@ -305,11 +334,13 @@ class MainWindow(QMainWindow):
         self.update_market_list(markets)
         self.log(f"✓ Loaded {len(markets)} active markets")
         self.refresh_btn.setEnabled(True)
+        self.refresh_btn.setText("🔄 Refresh")
     
     def on_fetch_error(self, error: str):
         """Handle fetch error"""
         self.log(f"❌ Error: {error}")
         self.refresh_btn.setEnabled(True)
+        self.refresh_btn.setText("🔄 Refresh")
         QMessageBox.warning(self, "Error", f"Failed to fetch markets:\n{error}")
     
     def update_market_list(self, markets: List[Market]):
@@ -321,18 +352,83 @@ class MainWindow(QMainWindow):
             self.market_list.addItem(item)
     
     def on_search_changed(self, text: str):
-        """Handle search"""
-        if not text:
+        """Handle search with debouncing"""
+        self.last_search_query = text.strip()
+        
+        # Stop the timer if it's running
+        self.search_timer.stop()
+        
+        if not text.strip():
+            # If empty, show all markets immediately
             self.update_market_list(self.markets)
+            return
+        
+        # Start debounce timer (500ms delay)
+        self.search_timer.start(500)
+    
+    def perform_search(self):
+        """Perform the actual search (called after debounce delay)"""
+        query = self.last_search_query
+        
+        if not query:
+            self.update_market_list(self.markets)
+            return
+        
+        # First, filter existing markets
+        local_filtered = [m for m in self.markets if query.lower() in m.question.lower()]
+        
+        if len(local_filtered) >= 5:
+            # If we have enough local results, show them immediately
+            self.update_market_list(local_filtered)
+            self.log(f"🔍 Showing {len(local_filtered)} local matches for '{query}'")
         else:
-            filtered = [m for m in self.markets if text.lower() in m.question.lower()]
-            self.update_market_list(filtered)
+            # Search via API for more results
+            self.log(f"🔍 Searching Polymarket for '{query}'...")
+            self.search_input.setEnabled(False)
+            
+            self.search_thread = MarketSearchThread(self.api, query)
+            self.search_thread.search_completed.connect(self.on_search_completed)
+            self.search_thread.error_occurred.connect(self.on_search_error)
+            self.search_thread.start()
+    
+    def on_search_completed(self, markets: List[Market]):
+        """Handle search results from API"""
+        self.search_input.setEnabled(True)
+        
+        if markets:
+            self.update_market_list(markets)
+            self.log(f"✓ Found {len(markets)} markets from search")
+        else:
+            # Fallback to local search if API returns nothing
+            local_filtered = [m for m in self.markets if self.last_search_query.lower() in m.question.lower()]
+            self.update_market_list(local_filtered)
+            self.log(f"No API results, showing {len(local_filtered)} local matches")
+    
+    def on_search_error(self, error: str):
+        """Handle search error"""
+        self.search_input.setEnabled(True)
+        self.log(f"⚠️ Search error: {error}")
+        
+        # Fallback to local search
+        local_filtered = [m for m in self.markets if self.last_search_query.lower() in m.question.lower()]
+        self.update_market_list(local_filtered)
+        self.log(f"Fallback: showing {len(local_filtered)} local matches")
     
     def on_market_selected(self, item: QListWidgetItem):
         """Handle market selection"""
         self.selected_market = item.data(Qt.ItemDataRole.UserRole)
         self.market_name_label.setText(f"📊 {self.selected_market.question}")
-        self.start_btn.setEnabled(True)
+        
+        # Enable appropriate buttons based on monitoring state
+        if not self.monitoring:
+            self.start_btn.setEnabled(True)
+            self.stop_btn.setEnabled(False)
+            self.execute_btn.setEnabled(False)
+        else:
+            self.start_btn.setEnabled(False)
+            self.stop_btn.setEnabled(True)
+            self.execute_btn.setEnabled(True)
+        
         self.log(f"✓ Selected: {self.selected_market.question}")
         
         # Reset display
@@ -344,10 +440,12 @@ class MainWindow(QMainWindow):
     def start_monitoring(self):
         """Start real-time price monitoring"""
         if not self.selected_market:
+            QMessageBox.warning(self, "No Market Selected", "Please select a market first.")
             return
         
         self.monitoring = True
         self.start_btn.setEnabled(False)
+        self.start_btn.setText("▶ Starting...")
         self.stop_btn.setEnabled(True)
         self.execute_btn.setEnabled(True)
         
@@ -359,12 +457,22 @@ class MainWindow(QMainWindow):
         self.price_thread.prices_updated.connect(self.on_prices_updated)
         self.price_thread.error_occurred.connect(self.on_price_error)
         self.price_thread.start()
+        
+        # Update button text after a short delay
+        QTimer.singleShot(1000, lambda: self.start_btn.setText("▶ Start Monitoring"))
     
     def stop_monitoring(self):
         """Stop monitoring"""
         self.monitoring = False
-        self.start_btn.setEnabled(True)
+        
+        # Update button states
+        if self.selected_market:
+            self.start_btn.setEnabled(True)
+        else:
+            self.start_btn.setEnabled(False)
+        
         self.stop_btn.setEnabled(False)
+        self.stop_btn.setText("⏹ Stopping...")
         self.execute_btn.setEnabled(False)
         
         if self.price_thread:
@@ -373,6 +481,9 @@ class MainWindow(QMainWindow):
             self.price_thread = None
         
         self.log("⏹ Stopped monitoring")
+        
+        # Reset button text after a short delay
+        QTimer.singleShot(500, lambda: self.stop_btn.setText("⏹ Stop"))
     
     def on_prices_updated(self, yes_price: float, no_price: float):
         """Handle real-time price updates"""
@@ -465,7 +576,12 @@ class MainWindow(QMainWindow):
     def execute_once(self):
         """Execute arbitrage manually"""
         if not self.selected_market:
+            QMessageBox.warning(self, "No Market Selected", "Please select a market first.")
             return
+        
+        # Disable button during execution
+        self.execute_btn.setEnabled(False)
+        self.execute_btn.setText("⚡ Executing...")
         
         # Get current prices
         yes_text = self.yes_price_label.text().split('$')[1] if '$' in self.yes_price_label.text() else None
@@ -473,6 +589,8 @@ class MainWindow(QMainWindow):
         
         if not yes_text or not no_text:
             self.log("❌ No prices available")
+            self.execute_btn.setEnabled(True)
+            self.execute_btn.setText("⚡ Execute Now")
             return
         
         try:
@@ -480,6 +598,8 @@ class MainWindow(QMainWindow):
             no_price = float(no_text)
         except:
             self.log("❌ Invalid prices")
+            self.execute_btn.setEnabled(True)
+            self.execute_btn.setText("⚡ Execute Now")
             return
         
         # Check for arbitrage
@@ -494,6 +614,10 @@ class MainWindow(QMainWindow):
             self.execute_arbitrage(opp)
         else:
             self.log("❌ No arbitrage opportunity at current prices")
+        
+        # Re-enable button
+        self.execute_btn.setEnabled(True)
+        self.execute_btn.setText("⚡ Execute Now")
     
     def execute_arbitrage(self, opp: ArbitrageOpportunity):
         """Execute arbitrage trade in demo mode"""
@@ -553,6 +677,10 @@ class MainWindow(QMainWindow):
         if self.price_thread:
             self.price_thread.stop()
             self.price_thread.wait()
+        
+        if self.search_thread and self.search_thread.isRunning():
+            self.search_thread.quit()
+            self.search_thread.wait()
         
         # Close API session
         loop = asyncio.new_event_loop()

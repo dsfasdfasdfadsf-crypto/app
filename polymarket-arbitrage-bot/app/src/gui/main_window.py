@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
         
         # Title
-        title = QLabel("⚡ Polymarket Arbitrage Bot")
+        title = QLabel("[*] Polymarket Arbitrage Bot")
         title_font = QFont()
         title_font.setPointSize(18)
         title_font.setBold(True)
@@ -153,7 +153,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(title)
         
         # Mode indicator
-        mode_label = QLabel("🎮 DEMO MODE - Real prices, fake money")
+        mode_label = QLabel("[DEMO] DEMO MODE - Real prices, fake money")
         mode_label.setStyleSheet(
             "background-color: #e3f2fd; padding: 10px; "
             "border-radius: 5px; font-size: 12pt; color: #1976d2;"
@@ -178,16 +178,16 @@ class MainWindow(QMainWindow):
     
     def create_market_selection(self) -> QGroupBox:
         """Create market selection group"""
-        group = QGroupBox("📊 Market Selection")
+        group = QGroupBox("[MARKETS] Market Selection")
         layout = QVBoxLayout()
         
         # Search and refresh
         search_layout = QHBoxLayout()
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("🔍 Search markets...")
+        self.search_input.setPlaceholderText("[SEARCH] Search markets...")
         self.search_input.textChanged.connect(self.on_search_changed)
         
-        self.refresh_btn = QPushButton("🔄 Refresh")
+        self.refresh_btn = QPushButton("[REFRESH] Refresh")
         self.refresh_btn.clicked.connect(self.fetch_markets)
         
         search_layout.addWidget(self.search_input, 4)
@@ -204,7 +204,7 @@ class MainWindow(QMainWindow):
     
     def create_price_display(self) -> QGroupBox:
         """Create price display group"""
-        group = QGroupBox("💰 Live Prices")
+        group = QGroupBox("[PRICES] Live Prices")
         layout = QVBoxLayout()
         
         # Market name
@@ -250,7 +250,7 @@ class MainWindow(QMainWindow):
         """Create control buttons"""
         layout = QHBoxLayout()
         
-        self.start_btn = QPushButton("▶ Start Monitoring")
+        self.start_btn = QPushButton("[START] Start Monitoring")
         self.start_btn.setStyleSheet(
             "QPushButton { background-color: #4caf50; color: white; "
             "padding: 10px; font-size: 12pt; border-radius: 5px; }"
@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
         self.start_btn.clicked.connect(self.start_monitoring)
         self.start_btn.setEnabled(False)
         
-        self.stop_btn = QPushButton("⏹ Stop")
+        self.stop_btn = QPushButton("[STOP] Stop")
         self.stop_btn.setStyleSheet(
             "QPushButton { background-color: #f44336; color: white; "
             "padding: 10px; font-size: 12pt; border-radius: 5px; }"
@@ -268,7 +268,7 @@ class MainWindow(QMainWindow):
         self.stop_btn.clicked.connect(self.stop_monitoring)
         self.stop_btn.setEnabled(False)
         
-        self.execute_btn = QPushButton("⚡ Execute Now")
+        self.execute_btn = QPushButton("[EXEC] Execute Now")
         self.execute_btn.setStyleSheet(
             "QPushButton { background-color: #ff9800; color: white; "
             "padding: 10px; font-size: 12pt; border-radius: 5px; }"
@@ -285,7 +285,7 @@ class MainWindow(QMainWindow):
     
     def create_log_display(self) -> QGroupBox:
         """Create activity log"""
-        group = QGroupBox("📋 Activity Log")
+        group = QGroupBox("[LOG] Activity Log")
         layout = QVBoxLayout()
         
         self.log_output = QTextEdit()
@@ -301,13 +301,13 @@ class MainWindow(QMainWindow):
         """Create status bar"""
         layout = QHBoxLayout()
         
-        self.balance_label = QLabel(f"💵 Balance: ${self.demo_mode.balance:.2f}")
+        self.balance_label = QLabel(f"[BAL] Balance: ${self.demo_mode.balance:.2f}")
         self.balance_label.setStyleSheet("font-size: 11pt; font-weight: bold;")
         
-        self.profit_label = QLabel(f"📈 Profit: ${self.demo_mode.total_profit:.2f}")
+        self.profit_label = QLabel(f"[PROFIT] Profit: ${self.demo_mode.total_profit:.2f}")
         self.profit_label.setStyleSheet("font-size: 11pt; font-weight: bold; color: #2e7d32;")
         
-        self.trades_label = QLabel(f"🔄 Trades: {self.demo_mode.num_trades}")
+        self.trades_label = QLabel(f"[TRADES] Trades: {self.demo_mode.num_trades}")
         self.trades_label.setStyleSheet("font-size: 11pt;")
         
         layout.addWidget(self.balance_label)
@@ -319,9 +319,9 @@ class MainWindow(QMainWindow):
     
     def fetch_markets(self):
         """Fetch markets from Polymarket"""
-        self.log("🔄 Fetching markets from Polymarket...")
+        self.log("[FETCH] Fetching markets from Polymarket...")
         self.refresh_btn.setEnabled(False)
-        self.refresh_btn.setText("🔄 Loading...")
+        self.refresh_btn.setText("[LOADING] Loading...")
         
         self.fetch_thread = MarketFetchThread(self.api)
         self.fetch_thread.markets_fetched.connect(self.on_markets_fetched)
@@ -332,22 +332,22 @@ class MainWindow(QMainWindow):
         """Handle markets fetched"""
         self.markets = markets
         self.update_market_list(markets)
-        self.log(f"✓ Loaded {len(markets)} active markets")
+        self.log(f"[OK] Loaded {len(markets)} active markets")
         self.refresh_btn.setEnabled(True)
-        self.refresh_btn.setText("🔄 Refresh")
+        self.refresh_btn.setText("[REFRESH] Refresh")
     
     def on_fetch_error(self, error: str):
         """Handle fetch error"""
-        self.log(f"❌ Error: {error}")
+        self.log(f"[ERROR] Error: {error}")
         self.refresh_btn.setEnabled(True)
-        self.refresh_btn.setText("🔄 Refresh")
+        self.refresh_btn.setText("[REFRESH] Refresh")
         QMessageBox.warning(self, "Error", f"Failed to fetch markets:\n{error}")
     
     def update_market_list(self, markets: List[Market]):
         """Update market list widget"""
         self.market_list.clear()
         for market in markets:
-            item = QListWidgetItem(f"📊 {market.question}")
+            item = QListWidgetItem(f"[MARKET] {market.question}")
             item.setData(Qt.ItemDataRole.UserRole, market)
             self.market_list.addItem(item)
     
@@ -380,10 +380,10 @@ class MainWindow(QMainWindow):
         if len(local_filtered) >= 5:
             # If we have enough local results, show them immediately
             self.update_market_list(local_filtered)
-            self.log(f"🔍 Showing {len(local_filtered)} local matches for '{query}'")
+            self.log(f"[SEARCH] Showing {len(local_filtered)} local matches for '{query}'")
         else:
             # Search via API for more results
-            self.log(f"🔍 Searching Polymarket for '{query}'...")
+            self.log(f"[SEARCH] Searching Polymarket for '{query}'...")
             self.search_input.setEnabled(False)
             
             self.search_thread = MarketSearchThread(self.api, query)
@@ -397,7 +397,7 @@ class MainWindow(QMainWindow):
         
         if markets:
             self.update_market_list(markets)
-            self.log(f"✓ Found {len(markets)} markets from search")
+            self.log(f"[OK] Found {len(markets)} markets from search")
         else:
             # Fallback to local search if API returns nothing
             local_filtered = [m for m in self.markets if self.last_search_query.lower() in m.question.lower()]
@@ -407,7 +407,7 @@ class MainWindow(QMainWindow):
     def on_search_error(self, error: str):
         """Handle search error"""
         self.search_input.setEnabled(True)
-        self.log(f"⚠️ Search error: {error}")
+        self.log(f"[WARN] Search error: {error}")
         
         # Fallback to local search
         local_filtered = [m for m in self.markets if self.last_search_query.lower() in m.question.lower()]
@@ -417,7 +417,7 @@ class MainWindow(QMainWindow):
     def on_market_selected(self, item: QListWidgetItem):
         """Handle market selection"""
         self.selected_market = item.data(Qt.ItemDataRole.UserRole)
-        self.market_name_label.setText(f"📊 {self.selected_market.question}")
+        self.market_name_label.setText(f"[MARKET] {self.selected_market.question}")
         
         # Enable appropriate buttons based on monitoring state
         if not self.monitoring:
@@ -429,7 +429,7 @@ class MainWindow(QMainWindow):
             self.stop_btn.setEnabled(True)
             self.execute_btn.setEnabled(True)
         
-        self.log(f"✓ Selected: {self.selected_market.question}")
+        self.log(f"[OK] Selected: {self.selected_market.question}")
         
         # Reset display
         self.yes_price_label.setText("YES: --")
@@ -445,12 +445,12 @@ class MainWindow(QMainWindow):
         
         self.monitoring = True
         self.start_btn.setEnabled(False)
-        self.start_btn.setText("▶ Starting...")
+        self.start_btn.setText("[START] Starting...")
         self.stop_btn.setEnabled(True)
         self.execute_btn.setEnabled(True)
         
-        self.log(f"▶ Monitoring started for: {self.selected_market.question}")
-        self.log("📡 Fetching real-time prices from Polymarket...")
+        self.log(f"[START] Monitoring started for: {self.selected_market.question}")
+        self.log("[FETCH] Fetching real-time prices from Polymarket...")
         
         # Start price update thread
         self.price_thread = PriceUpdateThread(self.api, self.selected_market)
@@ -459,7 +459,7 @@ class MainWindow(QMainWindow):
         self.price_thread.start()
         
         # Update button text after a short delay
-        QTimer.singleShot(1000, lambda: self.start_btn.setText("▶ Start Monitoring"))
+        QTimer.singleShot(1000, lambda: self.start_btn.setText("[START] Start Monitoring"))
     
     def stop_monitoring(self):
         """Stop monitoring"""
@@ -472,7 +472,7 @@ class MainWindow(QMainWindow):
             self.start_btn.setEnabled(False)
         
         self.stop_btn.setEnabled(False)
-        self.stop_btn.setText("⏹ Stopping...")
+        self.stop_btn.setText("[STOP] Stopping...")
         self.execute_btn.setEnabled(False)
         
         if self.price_thread:
@@ -480,10 +480,10 @@ class MainWindow(QMainWindow):
             self.price_thread.wait()
             self.price_thread = None
         
-        self.log("⏹ Stopped monitoring")
+        self.log("[STOP] Stopped monitoring")
         
         # Reset button text after a short delay
-        QTimer.singleShot(500, lambda: self.stop_btn.setText("⏹ Stop"))
+        QTimer.singleShot(500, lambda: self.stop_btn.setText("[STOP] Stop"))
     
     def on_prices_updated(self, yes_price: float, no_price: float):
         """Handle real-time price updates"""
@@ -540,9 +540,9 @@ class MainWindow(QMainWindow):
                     if opp:
                         # Show arbitrage alert
                         alert_text = (
-                            f"🚨 ARBITRAGE OPPORTUNITY!\n"
-                            f"💰 Profit: ${opp.estimated_profit:.4f} ({opp.profit_percentage:.2f}%)\n"
-                            f"📊 Total Cost: ${total:.4f}"
+                            f"[ALERT] ARBITRAGE OPPORTUNITY!\n"
+                            f"[PRICES] Profit: ${opp.estimated_profit:.4f} ({opp.profit_percentage:.2f}%)\n"
+                            f"[MARKET] Total Cost: ${total:.4f}"
                         )
                         self.arb_alert.setText(alert_text)
                         self.arb_alert.setStyleSheet(
@@ -559,7 +559,7 @@ class MainWindow(QMainWindow):
                         
                 except Exception as e:
                     logger.error(f"Error checking arbitrage: {e}")
-                    self.arb_alert.setText("⚠️ Error checking arbitrage")
+                    self.arb_alert.setText("[WARN] Error checking arbitrage")
                     self.arb_alert.setStyleSheet(
                         "font-size: 12pt; color: #d32f2f; background-color: #ffebee; "
                         "padding: 10px; border-radius: 5px;"
@@ -567,11 +567,11 @@ class MainWindow(QMainWindow):
                     
         except Exception as e:
             logger.error(f"Error updating prices: {e}")
-            self.log(f"❌ Price update error: {e}")
+            self.log(f"[ERROR] Price update error: {e}")
     
     def on_price_error(self, error: str):
         """Handle price fetch error"""
-        self.log(f"⚠️ Price update error: {error}")
+        self.log(f"[WARN] Price update error: {error}")
     
     def execute_once(self):
         """Execute arbitrage manually"""
@@ -581,25 +581,25 @@ class MainWindow(QMainWindow):
         
         # Disable button during execution
         self.execute_btn.setEnabled(False)
-        self.execute_btn.setText("⚡ Executing...")
+        self.execute_btn.setText("[*] Executing...")
         
         # Get current prices
         yes_text = self.yes_price_label.text().split('$')[1] if '$' in self.yes_price_label.text() else None
         no_text = self.no_price_label.text().split('$')[1] if '$' in self.no_price_label.text() else None
         
         if not yes_text or not no_text:
-            self.log("❌ No prices available")
+            self.log("[ERROR] No prices available")
             self.execute_btn.setEnabled(True)
-            self.execute_btn.setText("⚡ Execute Now")
+            self.execute_btn.setText("[*] Execute Now")
             return
         
         try:
             yes_price = float(yes_text)
             no_price = float(no_text)
         except:
-            self.log("❌ Invalid prices")
+            self.log("[ERROR] Invalid prices")
             self.execute_btn.setEnabled(True)
-            self.execute_btn.setText("⚡ Execute Now")
+            self.execute_btn.setText("[*] Execute Now")
             return
         
         # Check for arbitrage
@@ -613,11 +613,11 @@ class MainWindow(QMainWindow):
         if opp:
             self.execute_arbitrage(opp)
         else:
-            self.log("❌ No arbitrage opportunity at current prices")
+            self.log("[ERROR] No arbitrage opportunity at current prices")
         
         # Re-enable button
         self.execute_btn.setEnabled(True)
-        self.execute_btn.setText("⚡ Execute Now")
+        self.execute_btn.setText("[*] Execute Now")
     
     def execute_arbitrage(self, opp: ArbitrageOpportunity):
         """Execute arbitrage trade in demo mode"""
@@ -632,16 +632,16 @@ class MainWindow(QMainWindow):
             )
             
             if trade is None:
-                self.log("❌ Trade execution failed!")
+                self.log("[ERROR] Trade execution failed!")
                 return
             
             # Log trade details
             self.log("=" * 50)
-            self.log(f"⚡ ARBITRAGE EXECUTED")
+            self.log(f"[*] ARBITRAGE EXECUTED")
             self.log(f"   Market: {opp.market_name[:50]}...")
             self.log(f"   YES: ${opp.yes_price:.4f} | NO: ${opp.no_price:.4f}")
-            self.log(f"   💰 Profit: ${trade.profit:.4f}")
-            self.log(f"   📊 Balance: ${self.demo_mode.balance:.2f}")
+            self.log(f"   [PRICES] Profit: ${trade.profit:.4f}")
+            self.log(f"   [MARKET] Balance: ${self.demo_mode.balance:.2f}")
             self.log("=" * 50)
             
             # Update status
@@ -652,8 +652,8 @@ class MainWindow(QMainWindow):
             
         except Exception as e:
             logger.error(f"Error executing arbitrage: {e}")
-            self.log(f"❌ Execution error: {e}")
-            self.arb_alert.setText("❌ Execution failed")
+            self.log(f"[ERROR] Execution error: {e}")
+            self.arb_alert.setText("[ERROR] Execution failed")
             self.arb_alert.setStyleSheet(
                 "font-size: 12pt; color: #d32f2f; background-color: #ffebee; "
                 "padding: 10px; border-radius: 5px;"
@@ -661,9 +661,9 @@ class MainWindow(QMainWindow):
     
     def update_status(self):
         """Update status bar"""
-        self.balance_label.setText(f"💵 Balance: ${self.demo_mode.balance:.2f}")
-        self.profit_label.setText(f"📈 Profit: ${self.demo_mode.total_profit:.2f}")
-        self.trades_label.setText(f"🔄 Trades: {self.demo_mode.num_trades}")
+        self.balance_label.setText(f"[BAL] Balance: ${self.demo_mode.balance:.2f}")
+        self.profit_label.setText(f"[PROFIT] Profit: ${self.demo_mode.total_profit:.2f}")
+        self.trades_label.setText(f"[REFRESH] Trades: {self.demo_mode.num_trades}")
     
     def log(self, message: str):
         """Add message to log"""

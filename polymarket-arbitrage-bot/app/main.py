@@ -1,5 +1,5 @@
 """
-⚡ Polymarket Arbitrage Bot
+[*] Polymarket Arbitrage Bot
 Real-time arbitrage detection and execution
 """
 import sys
@@ -30,17 +30,17 @@ def check_dependencies():
     
     if missing:
         print("\n" + "=" * 60)
-        print("❌ MISSING DEPENDENCIES")
+        print("[ERROR] MISSING DEPENDENCIES")
         print("=" * 60)
         print("\nThe following required packages are not installed:")
         for pkg in missing:
             print(f"  • {pkg}")
-        print("\n📦 To install all dependencies, run:")
+        print("\n[INSTALL] To install all dependencies, run:")
         print("\n  pip install -r requirements.txt")
         print("\nOr install individually:")
         print("\n  pip install PyQt6 aiohttp pyyaml python-dotenv")
         print("\n" + "=" * 60)
-        print("\n💡 See INSTALL.md for detailed installation guide")
+        print("\n[INFO] See INSTALL.md for detailed installation guide")
         print("=" * 60 + "\n")
         sys.exit(1)
 
@@ -58,7 +58,7 @@ def main():
         logger = setup_logger("arbitrage")
         
         logger.info("=" * 60)
-        logger.info("⚡ POLYMARKET ARBITRAGE BOT")
+        logger.info("[*] POLYMARKET ARBITRAGE BOT")
         logger.info("=" * 60)
         logger.info("Mode: DEMO (real prices, fake money)")
         logger.info("Fetching real-time data from Polymarket...")
@@ -69,7 +69,7 @@ def main():
         config_path = Path("config.yaml")
         if not config_path.exists():
             logger.error("Configuration file 'config.yaml' not found!")
-            print("\n❌ ERROR: Configuration file missing!")
+            print("\n[ERROR] ERROR: Configuration file missing!")
             print("Please ensure 'config.yaml' exists in the application directory.")
             input("Press Enter to exit...")
             sys.exit(1)
@@ -78,7 +78,7 @@ def main():
             run_gui()
         except ImportError as e:
             logger.error(f"Import error: {e}")
-            print(f"\n❌ ERROR: Missing dependency - {e}")
+            print(f"\n[ERROR] ERROR: Missing dependency - {e}")
             print("Please run the installer to install all required packages.")
             input("Press Enter to exit...")
             sys.exit(1)
@@ -87,13 +87,13 @@ def main():
             sys.exit(0)
         except Exception as e:
             logger.error(f"Application error: {e}", exc_info=True)
-            print(f"\n❌ ERROR: {e}")
+            print(f"\n[ERROR] ERROR: {e}")
             print("Check the log files for more details.")
             input("Press Enter to exit...")
             sys.exit(1)
             
     except Exception as e:
-        print(f"\n❌ CRITICAL ERROR: {e}")
+        print(f"\n[ERROR] CRITICAL ERROR: {e}")
         print("The application failed to start.")
         input("Press Enter to exit...")
         sys.exit(1)

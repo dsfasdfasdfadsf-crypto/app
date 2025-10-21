@@ -154,7 +154,7 @@ class PolymarketAPI:
                         logger.warning(f"Error parsing market {item.get('id', 'unknown')}: {e}")
                         continue
                 
-                logger.info(f"✓ Fetched {len(markets)} valid markets")
+                logger.info(f"[OK] Fetched {len(markets)} valid markets")
                 return markets
                 
         except asyncio.TimeoutError:
@@ -258,7 +258,7 @@ class PolymarketAPI:
                         logger.warning(f"Error parsing search result {item.get('id', 'unknown')}: {e}")
                         continue
                 
-                logger.info(f"✓ Found {len(markets)} markets matching '{query}'")
+                logger.info(f"[OK] Found {len(markets)} markets matching '{query}'")
                 return markets
                 
         except asyncio.TimeoutError:

@@ -1,51 +1,42 @@
 # ⚡ Polymarket Arbitrage Bot
 
-**Automated arbitrage trading for Polymarket prediction markets.**
+Real-time arbitrage detection and demo trading for Polymarket prediction markets.
 
----
+## 🚀 Quick Start
 
-## 🚀 Installation
-
-**Double-click:**
-```
-INSTALL_AND_SETUP.bat
+**One-click installation:**
+```bash
+python3 INSTALLER.py
 ```
 
-The installer:
-- ✅ Checks for Python
-- ✅ Installs all packages
-- ✅ Creates desktop shortcut
-- ✅ Launches the app
+That's it! The installer will:
+- ✅ Check Python compatibility
+- ✅ Install all dependencies  
+- ✅ Create platform-specific launcher
+- ✅ Test all functionality
+- ✅ Verify API connectivity
 
-**That's it!**
+## 🎮 Features
 
----
-
-## 📂 Structure
-
-```
-ROOT/
-├── INSTALL_AND_SETUP.bat    ← Double-click this
-│
-└── polymarket-arbitrage-bot/
-    └── (everything else)
-```
-
----
+- **Real-time Data**: Live prices from Polymarket API
+- **Demo Mode**: Safe trading with fake money
+- **Auto-Detection**: Automatic arbitrage opportunity detection
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+- **User-friendly GUI**: Easy-to-use graphical interface
 
 ## 📖 Documentation
 
-See `polymarket-arbitrage-bot/README.md` for full documentation.
+See `polymarket-arbitrage-bot/app/docs/` for detailed documentation.
 
----
+## 🔧 Manual Installation
 
-## 🎮 Quick Start
+If you prefer manual setup:
+```bash
+cd polymarket-arbitrage-bot/app
+pip install -r requirements.txt
+python3 main.py
+```
 
-1. Run `INSTALL_AND_SETUP.bat`
-2. Wait for installation
-3. Use desktop shortcut
-4. Start trading!
+## ⚠️ Disclaimer
 
----
-
-**Windows/Linux/Mac • Python 3.11+ • ~50MB**
+This bot operates in **DEMO MODE** by default, using fake money for safe testing. Real trading requires additional setup and carries financial risk.

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-⚡ Polymarket Arbitrage Bot - Cross-Platform Installer
-Universal installer that works on Windows, macOS, and Linux
+⚡ POLYMARKET ARBITRAGE BOT - UNIVERSAL INSTALLER
+One-click installer that works on Windows, macOS, and Linux
+Installs dependencies, creates launchers, and tests functionality
 """
 import os
 import sys
@@ -12,10 +13,10 @@ from pathlib import Path
 
 def print_banner():
     """Print installation banner"""
-    print("=" * 60)
-    print("⚡ POLYMARKET ARBITRAGE BOT")
-    print("   Cross-Platform Installer")
-    print("=" * 60)
+    print("=" * 70)
+    print("⚡ POLYMARKET ARBITRAGE BOT - UNIVERSAL INSTALLER")
+    print("   One-click setup for Windows, macOS, and Linux")
+    print("=" * 70)
     print()
 
 
@@ -155,14 +156,41 @@ def test_installation():
         test_script = '''
 import sys
 sys.path.insert(0, ".")
+
+print("🧪 Testing core modules...")
 try:
     from src.utils.config import config
+    print("  ✅ Configuration")
+    
     from src.core.market import PolymarketAPI
+    print("  ✅ Market API")
+    
     from src.core.arbitrage import ArbitrageDetector
+    print("  ✅ Arbitrage Logic")
+    
     from src.core.demo_mode import DemoMode
-    print("✅ All modules loaded successfully!")
+    print("  ✅ Demo Trading")
+    
+    import PyQt6
+    print("  ✅ GUI Framework")
+    
+    print("\\n🧪 Testing arbitrage logic...")
+    detector = ArbitrageDetector(min_profit=0.01, trading_fee=0.02, gas_cost=0.01)
+    opp = detector.check_arbitrage("test", "Test Market", 0.40, 0.45)
+    if opp:
+        print(f"  ✅ Arbitrage detection works (${opp.estimated_profit:.4f} profit)")
+    else:
+        print("  ❌ Arbitrage detection failed")
+        sys.exit(1)
+    
+    print("\\n🎉 ALL TESTS PASSED!")
+    print("The bot is ready to use!")
+    
 except ImportError as e:
     print(f"❌ Import error: {e}")
+    sys.exit(1)
+except Exception as e:
+    print(f"❌ Test error: {e}")
     sys.exit(1)
 '''
         
@@ -200,9 +228,9 @@ def main():
     
     # Test installation
     if test_installation():
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 70)
         print("🎉 INSTALLATION COMPLETE!")
-        print("=" * 60)
+        print("=" * 70)
         
         if launcher:
             print(f"\n🚀 To run the bot:")
@@ -212,17 +240,23 @@ def main():
                 print(f"   Run: ./{launcher.name}")
         
         print(f"\n📁 Or navigate to:")
-        print(f"   {Path(__file__).parent / 'polymarket-arbitrage-bot' / 'app'}")
-        print(f"   Run: {get_python_command()} main.py")
+        print(f"   cd polymarket-arbitrage-bot/app")
+        print(f"   {get_python_command()} main.py")
         
         print(f"\n📖 Documentation:")
-        print(f"   {Path(__file__).parent / 'polymarket-arbitrage-bot' / 'app' / 'docs'}")
+        print(f"   polymarket-arbitrage-bot/app/docs/")
+        
+        print(f"\n🎮 Demo Mode Features:")
+        print(f"   • Real-time Polymarket data")
+        print(f"   • Safe demo trading with fake money")
+        print(f"   • Automatic arbitrage detection")
+        print(f"   • Live profit tracking")
         
     else:
         print("\n❌ Installation completed with errors.")
         print("   Please check the error messages above.")
     
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     input("\nPress Enter to exit...")
 
 
